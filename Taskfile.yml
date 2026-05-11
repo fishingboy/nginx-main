@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  up:
+    desc: Create nginx-net if not exists, then start containers
+    cmds:
+      - |
+        if ! docker network inspect nginx-net >/dev/null 2>&1; then
+          echo "Creating docker network: nginx-net"
+          docker network create nginx-net
+        else
+          echo "Docker network nginx-net already exists"
+        fi
+      - docker compose up -d
+  down:
+    cmds:
+      - docker compose down

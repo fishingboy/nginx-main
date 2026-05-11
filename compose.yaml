@@ -7,6 +7,8 @@ services:
       - ./conf.d:/etc/nginx/conf.d
     networks:
       - nginx-net 
+    container_name: nginx-main
 
 networks:
   nginx-net:
+    external: true
