@@ -3,6 +3,11 @@
 version: '3'
 
 tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
   up:
     desc: Create nginx-net if not exists, then start containers
     cmds:
@@ -16,10 +21,19 @@ tasks:
       - docker compose up -d
 
   down:
+    desc: Stop and remove containers
     cmds:
       - docker compose down
-  
+
   restart:
+    desc: Restart containers
     cmds:
       - docker compose down
-      - docker compose up -d 
+      - docker compose up -d
+
+  upgrade:
+    desc: Pull latest images, recreate containers, then remove dangling images
+    cmds:
+      - docker compose pull
+      - docker compose up -d --force-recreate
+      - docker image prune -f
