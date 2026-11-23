@@ -11,6 +11,7 @@ services:
     networks:
       - nginx-net 
     container_name: nginx-main
+    restart: unless-stopped
 
   certbot:
     image: certbot/certbot

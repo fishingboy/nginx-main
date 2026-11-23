@@ -75,8 +75,12 @@ server {
     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
 
+    # Docker 內建 DNS；搭配下方變數寫法，改成每次請求時才解析容器名稱
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
     location / {
-        proxy_pass http://your-app-container:8080;
+        set $upstream http://your-app-container:8080;
+        proxy_pass $upstream;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
@@ -84,6 +88,24 @@ server {
     }
 }
 ```
+
+> **為什麼不直接寫 `proxy_pass http://your-app-container:8080;`？**
+> 固定寫法會在 nginx 啟動時就解析容器名稱。只要有任何一個後端容器還沒加入 `nginx-net`（例如開機時啟動順序不固定），nginx 就會因為 `host not found in upstream` 而**整個啟動失敗**，連帶所有站台一起掛掉。另外，nginx 只會在啟動時解析一次 IP，後端容器重建、換了 IP 之後會持續回 502，直到 reload 為止。
+>
+> 改用 `resolver` 加變數之後：
+>
+> - 後端還沒起來時，nginx 照常啟動，只有該站暫時回 502，後端就緒後自動恢復。
+> - 後端換 IP 後，最多 `valid=10s` 就會跟上，不需要 reload。
+>
+> **注意**：`proxy_pass` 使用變數時，nginx 不會自動改寫 location 前綴。若要把 `/api/` 前綴去掉再轉給後端，需要自己 `rewrite`：
+>
+> ```nginx
+> location /api/ {
+>     set $upstream http://your-api-container:8080;
+>     rewrite ^/api/(.*)$ /$1 break;
+>     proxy_pass $upstream;
+> }
+> ```
 
 ## 憑證
 
